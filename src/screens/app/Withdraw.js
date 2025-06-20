@@ -11,54 +11,64 @@ import {
 import AlertCard from "../../components/AlertCard";
 import Tabs from '../../components/ResponsiveAppBar'
 
-
 export default function Withdraw() {
   const navigate = useNavigate()
-  const [amountError, setAmountError] = React.useState(false)
+  const [amountError, setAmountError] = React.useState(null)
   const [showProgressDialog, setProgressDialog] = useState(false);
-
   const [user, setUser] = useAtom(userObject)
-
 
   const handleSubmit = (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
+    const amount = parseFloat(data.get('amount'));
+    
+    // Reset previous errors
+    setAmountError(null);
 
-    if (data.get('amount').length < 2 || data.get('amount').length > user.minimumWithDrawal || data.get('amount').length > user.accountBalance) {
-      setAmountError(true)
-      return
-    } else {
-      setAmountError(false)
+    // Validate amount
+    if (isNaN(amount) || amount <= 0) {
+      setAmountError("Please enter a valid amount");
+      return;
     }
 
+    if (amount < user.minimumWithdrawal) {
+      setAmountError(`Minimum withdrawal is Ksh ${user.minimumWithdrawal}`);
+      return;
+    }
 
-    setProgressDialog(true)
+    if (amount > user.accountBalance) {
+      setAmountError("Insufficient account balance");
+      return;
+    }
+
+    setProgressDialog(true);
+    
+    // Simulate API call
     setTimeout(() => {
-      // setPayments((prev) => ({
-      //   ...prev,
-      //   method: "M-PESA",
-      //   mpesaName: data.get('mpesaName'),
-      //   mpesaNumber: data.get('mpesaNumber'),
-      //   added: true
-      // }))
-      setProgressDialog(false)
-      navigate("/profile")
-    }, 5000);
-
-
-    console.log({
-      email: data.get('amount'),
-      // password: data.get('mpesaName'),
-    });
+      setProgressDialog(false);
+      
+      // Update user balance (in a real app, this would come from the API response)
+      setUser(prev => ({
+        ...prev,
+        accountBalance: prev.accountBalance - amount
+      }));
+      
+      navigate("/profile", { 
+        state: { 
+          success: true,
+          message: `Successfully withdrew Ksh ${amount}` 
+        } 
+      });
+    }, 2000);
   };
 
   return (
-    <div><Tabs />
+    <div>
+      <Tabs />
       <Card variant="soft">
-        <Typography level="h3">
-          Withdraw
-        </Typography>
+        <Typography level="h3">Withdraw</Typography>
         <Divider sx={{ mt: 0.5, mb: 0.5 }} />
+        
         <Grid xs={12}>
           <Grid container justifyContent="center" spacing={2}>
             <Grid>
@@ -70,55 +80,63 @@ export default function Withdraw() {
                   maxHeight: { xs: 233, md: 167 },
                   maxWidth: { xs: 350, md: 250 },
                 }}
-                alt="The house from the offer."
+                alt="M-Pesa Logo"
                 src={mpesaLogo}
               />
 
-
               <Card size="lg">
-
                 <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
                   <FormControl>
                     <FormLabel>
-                      Account Balance :
+                      Account Balance:
                       <Typography level="title-lg">
-                        Ksh {user.accountBalance}
+                        Ksh {user.accountBalance.toLocaleString()}
                       </Typography>
                     </FormLabel>
                   </FormControl>
-                  <FormControl required error={amountError}>
+                  
+                  <FormControl error={!!amountError}>
                     <FormLabel>Enter Amount</FormLabel>
                     <Input
                       margin="normal"
                       required
                       fullWidth
                       name="amount"
-                      label="Enter amount"
-                      type="amount"
+                      placeholder="Enter amount"
+                      type="number"
                       id="amount"
+                      inputProps={{
+                        min: user.minimumWithdrawal,
+                        max: user.accountBalance,
+                        step: "any"
+                      }}
                     />
-                    {
-                      amountError ? <FormHelperText>Account balance below withdrawal limit</FormHelperText> : ""
-                    }
+                    {amountError && (
+                      <FormHelperText>{amountError}</FormHelperText>
+                    )}
                   </FormControl>
 
-                  {
-                    showProgressDialog ? <LinearProgress /> : <div></div>
-                  }
+                  {showProgressDialog && <LinearProgress />}
+                  
                   <Button
                     type="submit"
                     fullWidth
                     variant="solid"
                     sx={{ mt: 3, mb: 2 }}
+                    disabled={showProgressDialog}
                   >
-                    Withdraw
+                    {showProgressDialog ? "Processing..." : "Withdraw"}
                   </Button>
                 </Box>
               </Card>
             </Grid>
           </Grid>
         </Grid>
-        <AlertCard message={"Payments system is selcted based on your country for convenience"} />
+        
+        <AlertCard 
+          message="Payment system is selected based on your country for convenience" 
+          severity="info"
+        />
       </Card>
     </div>
   );
