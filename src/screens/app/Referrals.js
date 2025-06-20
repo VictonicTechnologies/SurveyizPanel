@@ -28,7 +28,7 @@ export default function Referrals() {
   const [error, setError] = useState(null);
 
   // Generate referral link based on user ID
-  const referralLink = `https://yourapp.com/signup?ref=${user.id}`;
+  const referralLink = `https://https://panel.surveyiss.com/?ref=${user.id}`;
   
   // Sample referral data - replace with actual data from your backend
   const [referrals, setReferrals] = useState([
