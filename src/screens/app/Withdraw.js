@@ -16,6 +16,8 @@ export default function Withdraw() {
   const [amountError, setAmountError] = React.useState(null)
   const [showProgressDialog, setProgressDialog] = useState(false);
   const [user, setUser] = useAtom(userObject)
+  
+  const WITHDRAWAL_LIMIT = 4500; // Ksh 4,500
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -26,13 +28,23 @@ export default function Withdraw() {
     setAmountError(null);
 
     // Validate amount
-    if (isNaN(amount) || amount <= 0) {
+    if (isNaN(amount) {
       setAmountError("Please enter a valid amount");
       return;
     }
 
+    if (amount <= 0) {
+      setAmountError("Amount must be greater than zero");
+      return;
+    }
+
     if (amount < user.minimumWithdrawal) {
-      setAmountError(`Minimum withdrawal is Ksh ${user.minimumWithdrawal}`);
+      setAmountError(`Minimum withdrawal is Ksh ${user.minimumWithdrawal.toLocaleString()}`);
+      return;
+    }
+
+    if (amount > WITHDRAWAL_LIMIT) {
+      setAmountError(`Maximum withdrawal amount is Ksh ${WITHDRAWAL_LIMIT.toLocaleString()}`);
       return;
     }
 
@@ -43,20 +55,16 @@ export default function Withdraw() {
 
     setProgressDialog(true);
     
-    // Simulate API call
     setTimeout(() => {
       setProgressDialog(false);
-      
-      // Update user balance (in a real app, this would come from the API response)
       setUser(prev => ({
         ...prev,
         accountBalance: prev.accountBalance - amount
       }));
-      
       navigate("/profile", { 
         state: { 
           success: true,
-          message: `Successfully withdrew Ksh ${amount}` 
+          message: `Successfully withdrew Ksh ${amount.toLocaleString()}` 
         } 
       });
     }, 2000);
@@ -86,13 +94,16 @@ export default function Withdraw() {
 
               <Card size="lg">
                 <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
-                  <FormControl>
+                  <FormControl sx={{ mb: 2 }}>
                     <FormLabel>
                       Account Balance:
                       <Typography level="title-lg">
                         Ksh {user.accountBalance.toLocaleString()}
                       </Typography>
                     </FormLabel>
+                    <Typography level="body-sm" sx={{ mt: 1 }}>
+                      Withdrawal limits: Ksh {user.minimumWithdrawal.toLocaleString()} - Ksh {WITHDRAWAL_LIMIT.toLocaleString()}
+                    </Typography>
                   </FormControl>
                   
                   <FormControl error={!!amountError}>
@@ -102,12 +113,12 @@ export default function Withdraw() {
                       required
                       fullWidth
                       name="amount"
-                      placeholder="Enter amount"
+                      placeholder={`Enter amount (Ksh ${user.minimumWithdrawal.toLocaleString()} - ${WITHDRAWAL_LIMIT.toLocaleString()})`}
                       type="number"
                       id="amount"
                       inputProps={{
                         min: user.minimumWithdrawal,
-                        max: user.accountBalance,
+                        max: WITHDRAWAL_LIMIT,
                         step: "any"
                       }}
                     />
